@@ -1,0 +1,32 @@
+const PAPERS = 3     // Define a constant representing the initial number of papers.
+const TONERS = 3     // Define a constant representing the initial number of toners.
+
+// Define a set of actions or events that can be performed (operations).
+set THINGS = {printAcquire, printTicket, acquirePaperRefill, paperRefill, acquireTonerRefill, tonerRefill, release}
+
+// Define a process for a ticket machine with a specified number of papers.
+TICKETMACHINE (PAPER = PAPERS) = TICKETMACHINE[PAPER],
+TICKETMACHINE[p : 0..PAPER] = 
+    if (p > 0)
+    then (printAcquire -> printTicket -> release -> TICKETMACHINE[p-1])
+    else (acquirePaperRefill -> paperRefill -> release -> TICKETMACHINE[PAPERS]).
+
+// Define a process for a passenger with a specified number of tickets.
+PASSENGER(TICKET_COUNT = 1) = PASSENGER[TICKET_COUNT],
+PASSENGER[t : 1..TICKET_COUNT] = (
+    printAcquire -> printTicket[t] ->
+    if (t > 1)
+    then (release -> PASSENGER[t-1])
+    else (release -> END) 
+) + THINGS / {printTicket/printTicket[t:1..TICKET_COUNT]}.
+
+// Define a process for a technician that involves acquiring, refilling, and releasing resources.
+TECHNICIAN = (acquirePaperRefill -> paperRefill -> release -> TECHNICIAN | wait -> TECHNICIAN) + THINGS.
+
+// Define a composed system representing the entire purchase ticket system.
+||PURCHASE_TICKET_SYSTEM =
+    (passengerOne: PASSENGER(3)
+    || passengerTwo: PASSENGER(1)
+    || paperTechnician: TECHNICIAN
+    || tonerTechnician: TECHNICIAN
+    || {passengerOne, passengerTwo, paperTechnician, tonerTechnician} :: TICKETMACHINE).
